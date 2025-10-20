@@ -17,6 +17,21 @@ We model the data as a temporal, directed network:
 ...  
 
 ## Project
+### Environment Setup
+Create virtual environment
+```
+python -m venv .venv
+```
+Activate virtual environment
+```
+source .venv/bin/activate
+```
+Install dependencies from requirements.txt
+```
+pip install -r requirements.txt
+```
+
+
 ### Step A – Data Preprocessing (Completed)
 
 **Purpose:** Convert raw EHR diagnosis data into a directed, weighted transition network.
