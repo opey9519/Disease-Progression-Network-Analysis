@@ -32,7 +32,7 @@ pip install -r requirements.txt
 ```
 
 
-### Step A – Data Preprocessing (Completed)
+### Step A – Data Preprocessing
 
 **Purpose:** Convert raw EHR diagnosis data into a directed, weighted transition network.
 
@@ -54,3 +54,27 @@ pip install -r requirements.txt
 4. Generate consecutive diagnosis pairs (src → dst)
 5. Count the number of patients for each pair
 6. Save the result as transitions_all.csv
+
+### Step B – Build Network
+
+This step converts patient diagnosis transitions into a directed, weighted network for analysis and ML.
+
+**Input:**  
+- CSV file with columns: `src`, `dst`, `weight` (generated in Step A / `data_prep.py`)
+
+**Process:**  
+1. Filter edges with weight below a threshold (`--min_weight`) to reduce noise.  
+2. Build a directed graph using NetworkX.  
+3. Convert the NetworkX graph into a PyTorch Geometric `Data` object.
+
+**Output:**  
+- `output_prefix.graphml` → GraphML file for visualization (Gephi, Cytoscape, etc.)  
+- `output_prefix.pt` → PyG Data object for downstream ML models
+
+**Usage:**
+
+```bash
+python3 src/build_graphs.py .data/transitions_all.csv output/network_stageB --min_weight 1
+```
+
+### Step C – Demographic slicing
