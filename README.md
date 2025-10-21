@@ -138,3 +138,35 @@ output/analysis_results/
 cd src
 python3 analysis.py
 ```
+
+
+### Step E – Interpretation
+
+**This step visualizes and interprets the demographic subgroup networks from Step D.**
+
+**Objectives**
+- Highlight clinical differences
+- Compare top disease transitions, hub diagnoses, and frequent pathways between age/gender groups.
+**Example: Older patients: hypertension → stroke; Younger patients: hypertension → migraines/anxiety.**
+
+**Visualize networks**
+- Side-by-side network diagrams for multiple groups.
+- Node size proportional to PageRank (hubs).
+- Edge width proportional to transition weight.
+- Optionally color nodes by community clusters.
+
+**Script**
+
+**src/interpretation.py performs:**
+- Loads subgroup networks (output/demographic_networks/)
+- Generates side-by-side plots (output/figures/network_comparison.png)
+- Prints top transitions for textual interpretation
+
+**Example Run**
+```
+cd src
+python3 interpretation.py
+```
+**Outputs:**
+- Figures: output/figures/network_comparison.png
+- Console: top 5 transitions per selected group
