@@ -98,3 +98,43 @@ Loads OMOP-style tables:
 ```
 output/demographic_networks/
 ```
+
+### Step D – Network Analysis
+
+**Purpose:** This step analyzes the demographic subgroup networks (from Step C) to identify shared and unique disease progression patterns.
+
+**src/analysis.py performs:**
+- High-frequency transitions
+- Extracts top-weighted edges per group (most common progressions).
+
+**Centrality metrics**
+- PageRank
+- in-degree
+- out-degree identify “hub” diagnoses.
+
+**Path analysis**
+Finds frequent 2–3 step progression pathways (e.g., diabetes → kidney disease → dialysis).
+
+**Community detection**
+Clusters diagnoses into communities using greedy modularity.
+
+**Output Directory**
+All results are saved under:
+```
+output/analysis_results/
+```
+
+**Each file corresponds to a demographic group:**
+| File                          | Description                 |
+| ----------------------------- | --------------------------- |
+| `top_transitions_<group>.csv` | Most frequent transitions   |
+| `centrality_<group>.csv`      | Node centrality measures    |
+| `paths_<group>.csv`           | Common short pathways       |
+| `communities_<group>.csv`     | Detected diagnosis clusters |
+| `summary_all_groups.csv`      | Overview across all groups  | 
+
+**Run Command**
+```
+cd src
+python3 analysis.py
+```
