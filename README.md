@@ -74,7 +74,7 @@ pip install -r requirements.txt
 **Usage:**
 
 ```bash
-python3 src/build_graphs.py .data/transitions_all.csv output/network_stageB --min_weight 1
+python3 src/build_graphs.py data/transitions_all.csv output/network_stageB --min_weight 1
 ```
 
 ### Step C – Demographic slicing
