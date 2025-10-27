@@ -10,7 +10,8 @@ ANALYSIS_DIR = ROOT / "output/analysis_results"
 FIGURES_DIR = ROOT / "output/figures"
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
-GROUPS_TO_COMPARE = ["Male_65+", "Female_65+"]  # Example comparison
+# Change groups to compare from output/demographic_networks
+GROUPS_TO_COMPARE = ["Male_65+", "Female_65+"]
 
 
 def load_graph(group):
