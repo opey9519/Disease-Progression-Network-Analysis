@@ -170,3 +170,56 @@ python3 interpretation.py
 **Outputs:**
 - Figures: output/figures/network_comparison.png
 - Console: top 5 transitions per selected group
+
+## Project 2 - Machine Learning
+### Environment Setup
+Activate virtual environment
+```
+source .venv/bin/activate
+```
+Install dependencies from requirements.txt
+```
+pip install -r requirements.txt
+```
+### Step A-C (See Above)
+### Step D - GNN Training
+**Purpose:** This step trains Graph Neural Networks (GNNs) on the demographic subgroup networks generated in Step C for predictive modeling of disease transitions.  
+**Models Implemented:**
+- GCN – Graph Convolutional Network
+- GraphSAGE – Graph Sample and Aggregate
+- GAT – Graph Attention Network
+**Input:**
+```
+output/demographic_networks/network_<group>.pt
+```
+**Example groups:**
+- Female: 18–49, 50–64, 65+
+- Male: 18–49, 50–64, 65+
+**Process:**
+1. Load the subgroup network PyG Data object.
+2. Split edges into training and negative samples for link prediction.
+3. Initialize GNN model (GCN, GraphSAGE, GAT).
+4. Train model for a fixed number of epochs using BCE loss.
+5. Monitor metrics: ROC AUC, Precision-Recall AUC.
+6. Save trained models per subgroup and per GNN architecture.
+**Output Directory:**
+```
+output/StepDGNN/
+```
+```
+network_Female_18–49_gcn_link_predictor.pt
+network_Female_18–49_graphsage_link_predictor.pt
+network_Female_18–49_gat_link_predictor.pt
+network_Male_50–64_gcn_link_predictor.pt
+network_Male_65+_graphsage_link_predictor.pt
+...etc for all demographic subgroups
+```
+**Usage:**
+```
+cd src
+python3 train_gnn.py
+```
+**Notes:**
+- All subgroup networks are automatically iterated over in train_gnn.py.
+- Trained models are ready for link prediction tasks, such as predicting likely future diagnoses based on patient history.
+- Step D fully integrates with Step C outputs for demographic-specific disease progression modeling (may need to run Project 1).
