@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import pandas as pd
 
-# ---------- Configuration ----------
+# Configuration
 ROOT = Path(__file__).resolve().parents[1]
 INPUT_DIR = ROOT / "output/demographic_networks"
 ANALYSIS_DIR = ROOT / "output/analysis_results"

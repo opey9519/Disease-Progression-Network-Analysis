@@ -2,13 +2,13 @@ import networkx as nx
 from pathlib import Path
 import pandas as pd
 
-# ---------- Configuration ----------
+# Configuration 
 ROOT = Path(__file__).resolve().parents[1]
 INPUT_DIR = ROOT / "output/demographic_networks"
 OUTPUT_DIR = ROOT / "output/graph_lists"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# ---------- Process ----------
+# Process
 for file in INPUT_DIR.glob("network_*.graphml"):
     group_name = file.stem.replace("network_", "")
     G = nx.read_graphml(file)

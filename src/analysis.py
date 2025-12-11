@@ -4,7 +4,7 @@ from pathlib import Path
 from itertools import islice
 from networkx.algorithms import community
 
-# ---------- Configuration ----------
+# Configuration
 ROOT = Path(__file__).resolve().parents[1]
 INPUT_DIR = ROOT / "output/demographic_networks"
 OUTPUT_DIR = ROOT / "output/analysis_results"
@@ -72,27 +72,27 @@ def analyze_all():
     for group, G in graphs.items():
         print(f"\nAnalyzing network: {group}")
 
-        # --- Top transitions ---
+        # Top transitions
         top_trans = top_edges(G, n=15)
         pd.DataFrame(top_trans, columns=["Src", "Dst", "Weight"]).to_csv(
             OUTPUT_DIR / f"top_transitions_{group}.csv", index=False
         )
 
-        # --- Centrality ---
+        # Centrality
         cent = centrality_measures(G)
         cent.to_csv(OUTPUT_DIR / f"centrality_{group}.csv")
 
-        # --- Frequent paths ---
+        # Frequent paths
         paths = frequent_paths(G, max_length=3, top_k=15)
         pd.DataFrame(
             [{"Path": " → ".join(p[0]), "Count": p[1]} for p in paths]
         ).to_csv(OUTPUT_DIR / f"paths_{group}.csv", index=False)
 
-        # --- Community detection ---
+        # Community detection
         comms = detect_communities(G)
         comms.to_csv(OUTPUT_DIR / f"communities_{group}.csv", index=False)
 
-        # --- Summary (for comparison later) ---
+        # Summary (for comparison later)
         summary.append({
             "Group": group,
             "NumNodes": G.number_of_nodes(),
