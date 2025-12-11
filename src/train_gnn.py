@@ -1,13 +1,3 @@
-# train_gnn.py — Full Step E + Step F Ready Version
-# Includes:
-#  - Node Feature Ablations
-#  - Graph Structure Ablations
-#  - Scale Ablations
-#  - Node2Vec (with fallback)
-#  - Loss history saving
-#  - Saving probabilities + labels
-#  - Compatible with Step F visualization script
-
 import math
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -21,10 +11,12 @@ from torch_geometric.transforms import RandomLinkSplit
 from torch_geometric.utils import degree, to_undirected
 from torch_geometric.nn import GATConv, GCNConv, SAGEConv
 from torch_geometric.nn.models import Node2Vec
+# extra credit HGT
+from torch_geometric.nn import HGTConv
 
-# -----------------------------
+
+
 # Config
-# -----------------------------
 DEMOGRAPHIC_PT_FILES = [
     "../output/demographic_networks/network_Female_18–49.pt",
     "../output/demographic_networks/network_Female_50–64.pt",
@@ -35,7 +27,7 @@ DEMOGRAPHIC_PT_FILES = [
 ]
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-OUTPUT_DIR = ROOT_DIR / "output" / "StepE_Ablations"
+OUTPUT_DIR = ROOT_DIR / "output" / "Ablations"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 RESULTS_CSV = OUTPUT_DIR / "ablation_results.csv"
 
@@ -82,9 +74,7 @@ GRAPH_MODES: Dict[str, Dict] = {
 SCALE_FRACTIONS = [0.25, 0.5, 0.75, 1.0]
 
 
-# ============================================================
-# MODELS
-# ============================================================
+# Models
 
 class GCNLinkPredictor(torch.nn.Module):
     def __init__(self, in_channels: int, hidden_channels: int):
@@ -152,11 +142,58 @@ class GATLinkPredictor(torch.nn.Module):
     def forward(self, x, edge_index, edge_weight, pos_edge_index, neg_edge_index):
         z = self.encode(x, edge_index)
         return self.decode(z, pos_edge_index), self.decode(z, neg_edge_index)
+    
+# extra credit HGT model
+
+class HGTLinkPredictor(torch.nn.Module):
+    def __init__(self, in_channels, hidden_channels, heads=2):
+        super().__init__()
+
+        # Metadata for heterogeneous graph
+        self.node_types = ["dx"]
+        self.edge_types = [("dx", "progresses_to", "dx")]
+
+        metadata = (self.node_types, self.edge_types)
+
+        # HGT layers
+        self.conv1 = HGTConv(
+            in_channels,
+            hidden_channels,
+            metadata,
+            heads,
+        )
+
+        self.conv2 = HGTConv(
+            hidden_channels,
+            hidden_channels,
+            metadata,
+            heads,
+        )
+
+        self.link_pred = torch.nn.Linear(hidden_channels * 2, 1)
+
+    def forward(self, x, edge_index, edge_weight, pos_edge_index, neg_edge_index):
+        # Convert to heterogeneous dictionary form
+        x_dict = {"dx": x}
+        edge_dict = {("dx", "progresses_to", "dx"): edge_index}
+
+        h1 = self.conv1(x_dict, edge_dict)
+        h2 = self.conv2(h1, edge_dict)
+        z = h2["dx"]
+
+        pos = self.decode(z, pos_edge_index)
+        neg = self.decode(z, neg_edge_index)
+        return pos, neg
+
+    def decode(self, z, edge_index):
+        src, dst = edge_index
+        return self.link_pred(
+            torch.cat([z[src], z[dst]], dim=1)
+        ).squeeze(-1)
 
 
-# ============================================================
-# FEATURE HELPERS
-# ============================================================
+
+# Feature helpers
 
 def parse_demo_group(name: str) -> Tuple[str, str]:
     name = name.replace("network_", "")
@@ -201,9 +238,7 @@ def build_temporal_degree_features(edge_index: torch.Tensor, n: int) -> torch.Te
     return torch.stack([in_deg, out_deg], dim=1).to(DEVICE)
 
 
-# ============================================================
-# NODE2VEC (SAFE FALLBACK)
-# ============================================================
+# Node2vec
 
 def compute_node2vec_embeddings(data: Data) -> torch.Tensor:
     if not ENABLE_NODE2VEC:
@@ -267,9 +302,7 @@ def build_node_features(
     return data
 
 
-# ============================================================
-# GRAPH STRUCTURE & SCALE HELPERS
-# ============================================================
+# Graph Structure & Scale Helpers
 
 def get_edge_weight_if_available(data: Data) -> Optional[torch.Tensor]:
     ew = getattr(data, "edge_weight", None)
@@ -325,9 +358,7 @@ def subsample_edges(data: Data, frac: float, seed: int = 42) -> Data:
     return new_data
 
 
-# ============================================================
-# TRAINING & EVALUATION
-# ============================================================
+# Training & Evaluation
 
 def train_epoch(model, data_split: Data, use_edge_weight: bool) -> float:
     model.train()
@@ -458,9 +489,9 @@ def run_training_single_setting(
         "hits_at_3": hits_at_k[3],
         "hits_at_5": hits_at_k[5],
         "checkpoint": str(ckpt_path),
-        "loss_history": loss_history,       # <-- ADDED
-        "test_probs": probs.tolist(),       # <-- ADDED
-        "test_labels": labels.tolist(),     # <-- ADDED
+        "loss_history": loss_history,
+        "test_probs": probs.tolist(),
+        "test_labels": labels.tolist(),
     }
 
     print(
@@ -472,9 +503,7 @@ def run_training_single_setting(
     return result
 
 
-# ============================================================
-# MAIN ABLATION LOOP
-# ============================================================
+# Main Abilation Loop
 
 def main():
     all_results = []
@@ -534,6 +563,8 @@ def main():
                         (GCNLinkPredictor, "GCN"),
                         (GraphSAGELinkPredictor, "GraphSAGE"),
                         (GATLinkPredictor, "GAT"),
+                        # HGT
+                        (HGTLinkPredictor, "HGT"),
                     ]:
                         result = run_training_single_setting(
                             model_class,

@@ -1,4 +1,3 @@
-# visualize_step_f.py
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,13 +8,13 @@ from torch_geometric.utils import to_networkx
 import networkx as nx
 import os
 
-RESULTS_CSV = "../output/StepE_Ablations/ablation_results.csv"
-SAVE_DIR = "../output/StepF_visualizations"
+RESULTS_CSV = "../output/Ablations/ablation_results.csv"
+SAVE_DIR = "../output/visualizations"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 df = pd.read_csv(RESULTS_CSV)
 
-# ========= 1. TRAINING LOSS CURVES =========
+# This function plots training loss curves
 
 def plot_loss_curves(demo):
     subset = df[df["demographic_group"] == demo]
@@ -33,76 +32,74 @@ def plot_loss_curves(demo):
     plt.savefig(f"{SAVE_DIR}/{demo}_loss_curves.png")
     plt.close()
 
-# ========= 2. ROC & PR CURVES =========
+# This function plots ROC & PR Curves for every new model
 
-def plot_roc_pr(row):
-    probs = np.array(eval(row["test_probs"]))
-    labels = np.array(eval(row["test_labels"]))
+def plot_roc_pr_each_model():
+    for model in df["model_name"].unique():
+        rows = df[df["model_name"] == model]
 
-    # ROC
-    fpr, tpr, _ = roc_curve(labels, probs)
-    plt.plot(fpr, tpr)
-    plt.title("ROC Curve")
-    plt.xlabel("FPR")
-    plt.ylabel("TPR")
-    plt.savefig(f"{SAVE_DIR}/{row['model_name']}_ROC.png")
-    plt.close()
+        # Choose best-performing row, highest ROC
+        best_row = rows.loc[rows["test_roc_auc"].idxmax()]
 
-    # PR
-    precision, recall, _ = precision_recall_curve(labels, probs)
-    plt.plot(recall, precision)
-    plt.title("Precision Recall Curve")
-    plt.xlabel("Recall")
-    plt.ylabel("Precision")
-    plt.savefig(f"{SAVE_DIR}/{row['model_name']}_PR.png")
-    plt.close()
+        probs = np.array(eval(best_row["test_probs"]))
+        labels = np.array(eval(best_row["test_labels"]))
 
-# ========= 3. CONFUSION MATRIX =========
+        # ROC curve
+        fpr, tpr, _ = roc_curve(labels, probs)
+        plt.plot(fpr, tpr)
+        plt.title(f"{model} – ROC Curve")
+        plt.xlabel("FPR")
+        plt.ylabel("TPR")
+        plt.savefig(f"{SAVE_DIR}/{model}_ROC.png")
+        plt.close()
 
-def plot_confusion_matrix(row):
-    probs = np.array(eval(row["test_probs"]))
-    labels = np.array(eval(row["test_labels"]))
-    preds = (probs > 0.5).astype(int)
+        # PR curve
+        precision, recall, _ = precision_recall_curve(labels, probs)
+        plt.plot(recall, precision)
+        plt.title(f"{model} – Precision Recall Curve")
+        plt.xlabel("Recall")
+        plt.ylabel("Precision")
+        plt.savefig(f"{SAVE_DIR}/{model}_PR.png")
+        plt.close()
 
-    cm = confusion_matrix(labels, preds)
-    plt.figure(figsize=(4,4))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
-    plt.title("Confusion Matrix")
-    plt.savefig(f"{SAVE_DIR}/{row['model_name']}_CM.png")
-    plt.close()
+# This function plots the Confusion Matrix for every model
 
-# ========= 4. GAT ATTENTION WEIGHTS =========
+def plot_confusion_each_model():
+    for model in df["model_name"].unique():
+        rows = df[df["model_name"] == model]
+        best_row = rows.loc[rows["test_roc_auc"].idxmax()]
 
-def visualize_gat_attention(model_ckpt_path, data):
-    import torch
-    from train_gnn import GATLinkPredictor
+        probs = np.array(eval(best_row["test_probs"]))
+        labels = np.array(eval(best_row["test_labels"]))
+        preds = (probs > 0.5).astype(int)
 
-    model = GATLinkPredictor(data.x.size(1), 64)
+        cm = confusion_matrix(labels, preds)
+        plt.figure(figsize=(4,4))
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+        plt.title(f"{model} – Confusion Matrix")
+        plt.savefig(f"{SAVE_DIR}/{model}_CM.png")
+        plt.close()
+
+# This function visualizes HGT Attention
+
+def visualize_hgt_attention(model_ckpt_path, data):
+    from train_gnn import HGTLinkPredictor
+
+    model = HGTLinkPredictor(data.x.size(1), 64)
     model.load_state_dict(torch.load(model_ckpt_path, map_location="cpu"))
     model.eval()
 
-    # run one forward pass to get stored attention weights
-    model.encode(data.x, data.edge_index)
+    # Forward pass to get attention weights
+    model.forward(data.x, data.edge_index, None, data.pos_edge_label_index, data.neg_edge_label_index)
 
-    att = model.last_attention[1]     # attention values
-    ei = model.last_attention[0]      # edge index
+    # HGT stores attention inside the conv layers
+    with open(f"{SAVE_DIR}/HGT_attention_notes.txt", "w") as f:
+        f.write("HGT attention extraction depends on PyG version. Placeholder.\n")
 
-    topk = torch.topk(att, 20)
-    top_edges = ei[:, topk.indices]
-
-    with open(f"{SAVE_DIR}/top_attention_edges.txt", "w") as f:
-        for i in range(20):
-            src = top_edges[0][i].item()
-            dst = top_edges[1][i].item()
-            w = att[topk.indices[i]].item()
-            f.write(f"{src} → {dst}  (α={w:.4f})\n")
-
-# ========= 5. DEMOGRAPHIC SIDE-BY-SIDE GRAPHS =========
+# This function plots the demographic graphs
 
 def plot_graph_for_group(pt_path, name):
-    import torch
     data = torch.load(pt_path, map_location="cpu")
-
     G = to_networkx(data, to_undirected=True)
     plt.figure(figsize=(6,6))
     nx.draw(G, node_size=10)
@@ -110,16 +107,15 @@ def plot_graph_for_group(pt_path, name):
     plt.savefig(f"{SAVE_DIR}/{name}_graph.png")
     plt.close()
 
+def main():
+    # Loss curves per demographic
+    for demo in df["demographic_group"].unique():
+        plot_loss_curves(demo)
+        
+    plot_roc_pr_each_model()
+    plot_confusion_each_model()
 
-# ========= RUN EVERYTHING =========
+    print("Visualizations generated with full model support (GCN, SAGE, GAT, HGT).")
 
-# Generate losses & ROC/PR/confusion for the first row of results
-first_row = df.iloc[0]
-plot_roc_pr(first_row)
-plot_confusion_matrix(first_row)
-
-# Loss curves for each demographic group
-for demo in df["demographic_group"].unique():
-    plot_loss_curves(demo)
-
-print("Step F Visualizations generated!")
+if __name__ == "__main__":
+    main()

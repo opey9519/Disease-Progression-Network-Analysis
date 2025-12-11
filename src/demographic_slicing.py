@@ -5,8 +5,8 @@ from build_graphs import build_directed_graph, graph_to_pyg
 import torch
 import networkx as nx
 
-# ---------- Configuration ----------
-ROOT = Path(__file__).resolve().parents[1]   # go one level up from /src/
+# Configuration
+ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 OUTPUT_DIR = ROOT / "output/demographic_networks"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -78,7 +78,7 @@ def build_group_networks():
             prefix = OUTPUT_DIR / f"network_{group_name}"
             nx.write_graphml(G, f"{prefix}.graphml")
             torch.save(graph_to_pyg(G), f"{prefix}.pt")
-            print(f"✅ Saved network: {prefix}.graphml / .pt")
+            print(f"Saved network: {prefix}.graphml / .pt")
 
 
 if __name__ == "__main__":
