@@ -39,7 +39,7 @@ def generate_transitions(df, pid_col="person_id", diag_col="condition_concept_id
     return trans_df
 
 
-# ---------- Standalone Run ----------
+# Standalone Run
 if __name__ == "__main__":
     print("Loading tables")
     conditions = pd.read_csv(DATA_DIR / "sampled_condition_occurrence.csv")
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     trans_df = generate_transitions(df)
     print(f"→ Generated {len(trans_df)} unique diagnosis transitions.")
 
-    # ---------- Saving ----------
+    # Saving
     out_path = DATA_DIR / "transitions_all.csv"
     trans_df.to_csv(out_path, index=False)
     print(f"Saved transitions to {out_path}")
